@@ -90,39 +90,62 @@
     </div>
 
     <script>
-        const responses = [
-            "这不好说呢。",
-            "当然可以！",
-            "也许吧。",
-            "问问你自己。",
-            "再试一次。",
-            "绝对不行！",
-            "听天由命吧。"
-        ];
-
-        function sendMessage() {
-            const userInput = document.getElementById("userInput").value.trim();
-            if (userInput === "") return;
-
-            const chatBox = document.getElementById("chatBox");
-            const userMessage = `<p><b>你：</b> ${userInput}</p>`;
-            chatBox.innerHTML += userMessage;
-
-            setTimeout(() => {
-                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                const botMessage = `<p><b>海螺：</b> ${randomResponse}</p>`;
-                chatBox.innerHTML += botMessage;
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }, 800);
-
-            document.getElementById("userInput").value = "";
-        }
-
-        function handleKeyPress(event) {
-            if (event.key === "Enter") {
-                sendMessage();
+        async function getRandomReply() {
+            try {
+                let response = await fetch('https://api.adviceslip.com/advice');
+                let data = await response.json();
+                return data.slip.advice; // 获取 API 返回的建议内容
+            } catch (error) {
+                return "海螺暂时无法回答，请稍后再试。";
             }
         }
-    </script>
+    
+        async function detectLanguage(text) {
+            try {
+                console.log(text);
+                let response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|en`);
+                let data = await response.json();
+                console.log(data);
+                console.log(data.responseData.detectedLanguage);
+                return data.responseData.detectedLanguage || "en"; // 获取检测到的语言
+            } catch (error) {
+                return "en"; // 失败则默认英文
+            }
+        }
+    
+        async function translateText(text, sourceLang) {
+            if (sourceLang === "en") return text; // 如果原语言是英文，直接返回原文
+    
+            try {
+                let response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${sourceLang}`);
+                let data = await response.json();
+                return data.responseData.translatedText || text; // 返回翻译后的文本
+            } catch (error) {
+                return text; // 失败则返回原文
+            }
+        }
+    
+        async function sendMessage() {
+            const userInput = document.getElementById("userInput").value.trim();
+            if (!userInput) return;
+    
+            const chatBox = document.getElementById("chatBox");
+            chatBox.innerHTML += `<p><b>你：</b> ${userInput}</p>`;
+            document.getElementById("userInput").value = "";
+    
+            setTimeout(async () => {
+                let reply = await getRandomReply();
+                let userLang = await detectLanguage(userInput); // 检测用户输入的语言
+                console.log(userLang);
+                let translatedReply = await translateText(reply, userLang); // 仅在非英文时翻译
+                chatBox.innerHTML += `<p><b>海螺：</b> ${translatedReply}</p>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 800);
+        }
+    
+        function handleKeyPress(event) {
+            if (event.key === "Enter") sendMessage();
+        }
+    </script>    
 </body>
 </html>
