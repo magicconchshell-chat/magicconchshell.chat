@@ -105,9 +105,7 @@
                 console.log(text);
                 let response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|en`);
                 let data = await response.json();
-                console.log(data);
-                console.log(data.responseData.detectedLanguage);
-                return data.responseData.detectedLanguage || "en"; // 获取检测到的语言
+                return data.responseData.detectedLanguage || "zh"; // 获取检测到的语言
             } catch (error) {
                 return "en"; // 失败则默认英文
             }
@@ -136,7 +134,6 @@
             setTimeout(async () => {
                 let reply = await getRandomReply();
                 let userLang = await detectLanguage(userInput); // 检测用户输入的语言
-                console.log(userLang);
                 let translatedReply = await translateText(reply, userLang); // 仅在非英文时翻译
                 chatBox.innerHTML += `<p><b>海螺：</b> ${translatedReply}</p>`;
                 chatBox.scrollTop = chatBox.scrollHeight;
